@@ -12,6 +12,7 @@ class Tracker:
 
         self.device = device 
         self._yolonas = models.get(Models.YOLO_NAS_S, pretrained_weights="coco")
+        self._yolonas.to(self.device)
         self._conf_threshold = 0.8
 
         self.deepsort_ckpt_path = "/home/rmarefat/projects/github/YOLONAS_DeepSORT/pretrained_weights/ckpt.t7"
@@ -56,9 +57,8 @@ class Tracker:
         
         return predictions
 
-    def _draw_boxes(self, img, index, bbox, identities=None, offset=(0,0)):
-        print(bbox)
-        exit()
+    def _draw_boxes(self, img, bbox, identities=None, offset=(0,0)):
+
         for i,box in enumerate(bbox):
             x1,y1,x2,y2 = [int(i) for i in box]
             x1 += offset[0]
@@ -81,52 +81,59 @@ class Tracker:
     def track(self, video_path):
         frames = self._read_video(video_path)
 
+        
         for index, frame in enumerate(frames):
-            # cv2.imwrite(f"frames/{index}.jpg", frame)
-
-            detection_result = self._detect_objects(frame)
+            try:
             
-            
-            # for d in detection_result:
 
-            labels = detection_result[0].prediction.labels
-            confidences = detection_result[0].prediction.confidence
-            confidences = confidences.tolist()
-            bboxes = detection_result[0].prediction.bboxes_xyxy
-            labels = labels.tolist()
-
-
-            bbox_for_deepsort = []
-            filtered_confidences = []
-            for bbox, label, conf in zip(bboxes, labels, confidences):
-                label = int(label)
-                if not(label == 2) or not(conf > self._conf_threshold):
-                    continue
+                detection_result = self._detect_objects(frame)
                 
-                bbox = bbox.tolist()
-
-                top_left_x = int(bbox[0])
-                top_left_y = int(bbox[1])
-                bottom_right_x = int(bbox[2])
-                bottom_right_y = int(bbox[3])
-
-                bbox_for_deepsort.append([top_left_x + (bottom_right_x - top_left_x) / 2, top_left_y + (bottom_right_y - top_left_y) / 2, bottom_right_x - top_left_x, bottom_right_y - top_left_y])
-                filtered_confidences.append(conf)
 
 
-            bbox_for_deepsort = np.array(bbox_for_deepsort)
-            outputs = self.deepsort.update(bbox_for_deepsort, filtered_confidences, frame)
+                labels = detection_result[0].prediction.labels.tolist()
 
-            for bbox, conf in zip(bbox_for_deepsort, confidences):
+                confidences = detection_result[0].prediction.confidence.tolist()
+                bboxes = detection_result[0].prediction.bboxes_xyxy
+                
+                bbox_for_deepsort = []
+                filtered_confidences = []
+                for bbox, label, conf in zip(bboxes, labels, confidences):
+                    label = int(label)
+                    if not(label == 2) or not(conf > self._conf_threshold):
+                        continue
+                    
+                    bbox = bbox.tolist()
+
+                    top_left_x = int(bbox[0])
+                    top_left_y = int(bbox[1])
+                    bottom_right_x = int(bbox[2])
+                    bottom_right_y = int(bbox[3])
+
+
+                    # the following: converting
+                    bbox_for_deepsort.append([top_left_x + (bottom_right_x - top_left_x) / 2, top_left_y + (bottom_right_y - top_left_y) / 2, bottom_right_x - top_left_x, bottom_right_y - top_left_y])
+
+                    filtered_confidences.append(conf)
+
+
+                bbox_for_deepsort = np.array(bbox_for_deepsort)
+                
+                
+                outputs = self.deepsort.update(bbox_for_deepsort, filtered_confidences, frame)
+
+                
+                
                 if len(outputs) > 0:
                     bbox_xyxy = outputs[:,:4]
                     identities = outputs[:,-1]
+
                     frame = self._draw_boxes(frame, bbox_xyxy, identities)
 
-                                
-            cv2.imwrite(f"frames/{index}.jpg", frame)
-                
-
+                                    
+                cv2.imwrite(f"frames/{str(index).zfill(5)}.jpg", frame)
+            except:
+                continue
+            
             
 
 

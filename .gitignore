@@ -2,3 +2,5 @@ venv
 movie.mp4
 pretrained_weights
 frames
+make_movie_with_frames.py
+
