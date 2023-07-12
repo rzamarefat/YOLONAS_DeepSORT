@@ -1,6 +1,6 @@
 # Object Tracking | YOLONAS + DeepSORT
 
-An object tracking system using YOLONAS and DeepSORT
+### An object tracking system using YOLONAS and DeepSORT
 
 ## Demo
 
@@ -24,5 +24,5 @@ pip install -r requirements.txt
 ## Inference
 
 ## Refs:
-Thanks for this repo for DeepSORT algorithm and some utility function
+Thanks for this repo for DeepSORT algorithm and some utility functions
 https://github.com/ModelBunker/Deep-SORT-PyTorch
